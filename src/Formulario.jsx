@@ -13,7 +13,6 @@ function Formulario() {
         cedula: "",
     });
 
-    // 🔹 Manejar cambios
     const handleChange = (e) => {
         setDatos({
             ...datos,
@@ -21,9 +20,9 @@ function Formulario() {
         });
     };
 
-    // 🔥 Buscar cliente por cédula (CORREGIDO)
+    // Buscar cliente solo si hay cédula
     const buscarCliente = async (cedula) => {
-        if (!cedula) return;
+        if (!cedula || cedula.trim() === "") return;
 
         const q = query(
             collection(db, "clientes"),
@@ -37,7 +36,6 @@ function Formulario() {
 
             querySnapshot.forEach(doc => {
                 const data = doc.data();
-
                 const fecha = data.fecha?.toDate
                     ? data.fecha.toDate()
                     : new Date(data.fecha);
@@ -52,15 +50,20 @@ function Formulario() {
                     ...prev,
                     nombre: ultimo.nombre || "",
                     telefono: ultimo.telefono || "",
-                    informacion: "", // 🔥 SIEMPRE VACÍO
+                    informacion: "",   // Siempre se limpia la info nueva
                 }));
             }
         }
     };
 
-    // 🔹 Guardar datos
     const handleSubmit = async (e) => {
         e.preventDefault();
+
+        // 🔥 Validación condicional: si compró, la cédula es obligatoria
+        if (datos.compra === "si" && (!datos.cedula || datos.cedula.trim() === "")) {
+            alert("⚠️ Si el cliente realizó una compra, la cédula es obligatoria.");
+            return;
+        }
 
         try {
             await addDoc(collection(db, "clientes"), {
@@ -68,7 +71,7 @@ function Formulario() {
                 telefono: datos.telefono,
                 informacion: datos.informacion || "",
                 compra: datos.compra,
-                cedula: datos.cedula || "",
+                cedula: datos.cedula || "",    // Si no hay cédula, guarda string vacío
                 fecha: new Date(),
             });
 
@@ -81,7 +84,8 @@ function Formulario() {
                 compra: "no",
                 cedula: "",
             });
-        } catch {
+        } catch (error) {
+            console.error(error);
             alert("Error al guardar ❌");
         }
     };
@@ -89,13 +93,10 @@ function Formulario() {
     return (
         <div className="contenedor">
             <div className="tarjeta">
-
                 <img src={logo} alt="Logo" className="logo" />
-
                 <h2 className="titulo">Registro de Clientes</h2>
 
                 <form className="formulario" onSubmit={handleSubmit}>
-
                     <input
                         className="input"
                         name="nombre"
@@ -117,7 +118,7 @@ function Formulario() {
                     <textarea
                         className="input"
                         name="informacion"
-                        placeholder="Información (opcional)"
+                        placeholder="Información "
                         value={datos.informacion}
                         onChange={handleChange}
                         rows="3"
@@ -126,7 +127,6 @@ function Formulario() {
                     {/* COMPRA */}
                     <div className="radio-group">
                         <p>¿Realizó compra?</p>
-
                         <label>
                             <input
                                 type="radio"
@@ -137,7 +137,6 @@ function Formulario() {
                             />
                             Sí
                         </label>
-
                         <label>
                             <input
                                 type="radio"
@@ -150,27 +149,23 @@ function Formulario() {
                         </label>
                     </div>
 
-                    {/* CÉDULA */}
+                    {/* CÉDULA - Ya no es required */}
                     <input
                         className="input"
                         name="cedula"
-                        placeholder="Cédula"
+                        placeholder="Cédula "
                         value={datos.cedula}
                         onChange={handleChange}
-                        onBlur={(e) => buscarCliente(e.target.value)} // 🔥 AQUÍ SE AUTOCOMPLETA
-                        required
+                        onBlur={(e) => buscarCliente(e.target.value)}
                     />
 
                     <button className="boton" type="submit">
                         Guardar cliente
                     </button>
-
                 </form>
             </div>
         </div>
     );
 }
-
-// update
 
 export default Formulario;
